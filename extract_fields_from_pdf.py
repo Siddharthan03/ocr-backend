@@ -5,7 +5,7 @@ import io
 from PIL import Image as PILImage
 from datetime import datetime
 from google.cloud import vision
-from google.cloud.vision import Image  # ✅ Important import
+from google.cloud.vision import Image  # ✅ Required for OCR
 
 
 def ocr_page(page, vision_client):
@@ -81,9 +81,6 @@ def extract_coverage_details(text3):
 
     lines = [line.strip() for line in text3.splitlines() if line.strip()]
     n = len(lines)
-
-    def is_valid(val):
-        return val and val.lower() not in ["-", ":", "n/a", "na", "number", "name", "encounter", "dob"]
 
     for i, line in enumerate(lines):
         lwr = line.lower()
@@ -171,7 +168,6 @@ def extract_structured_data_from_text(text1, text2, text3):
             auth_number = match.group(1)
 
     coverage = extract_coverage_details(text3)
-
     diagnosis_code = extract(r"\b([A-Z]\d{2}\.\d{3}[A-Z]?)\b")
     diagnosis_desc = extract(r"Diagnosis[:\s]*([^\n]+)")
     if not re.search(r"\b[A-Z]\d{2}\.\d{3}[A-Z]?\b", diagnosis_desc):
@@ -215,8 +211,7 @@ def flatten_metadata(data):
     return {k: v for k, v in data.items()}
 
 
-def extract_fields_from_pdf(file_storage_obj):
-    vision_client = vision.ImageAnnotatorClient()
+def extract_fields_from_pdf(file_storage_obj, vision_client):  # ✅ fixed function signature
     doc = fitz.open(stream=file_storage_obj.read(), filetype="pdf")
     text1 = ocr_page(doc[0], vision_client) if len(doc) > 0 else ""
     text2 = ocr_page(doc[1], vision_client) if len(doc) > 1 else ""
