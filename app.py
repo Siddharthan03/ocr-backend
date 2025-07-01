@@ -1,24 +1,34 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import os, fitz, io
+import os, fitz, io, json
 from PIL import Image
 from fpdf import FPDF
 from extract_fields_from_pdf import extract_fields_from_pdf, flatten_metadata
 from google.cloud import vision
+from google.oauth2 import service_account
 
-# ✅ Set Google Cloud Vision API credentials
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "pdf-ocr-project-464314-ce102c4552b2.json"
-
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = "uploads"
+# Output folder for PDF export
 OUTPUT_FOLDER = "output"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# ✅ Vision client (for internal OCR fallback if needed)
-vision_client = vision.ImageAnnotatorClient()
+# Read the JSON string from Railway environment variable
+credentials_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+if not credentials_json:
+    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON env variable is missing")
+
+# Convert JSON string to dictionary
+credentials_dict = json.loads(credentials_json)
+
+# Create credentials object from the dict
+credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+
+# Create the Vision API client with the loaded credentials
+vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 
 # ✅ OCR helper (currently unused, but kept for extensibility)
 def ocr_with_google_vision(image: Image.Image) -> str:
@@ -75,6 +85,11 @@ def export_pdf():
     path = os.path.join(OUTPUT_FOLDER, "metadata_output.pdf")
     pdf.output(path)
     return send_file(path, as_attachment=True)
+
+# ✅ Root Route
+@app.route("/")
+def home():
+    return "Flask OCR backend running"
 
 # ✅ App Entrypoint
 if __name__ == "__main__":
