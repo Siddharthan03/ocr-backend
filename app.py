@@ -7,29 +7,28 @@ from extract_fields_from_pdf import extract_fields_from_pdf, flatten_metadata
 from google.cloud import vision
 from google.oauth2 import service_account
 
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Output folder for PDF export
+# Output folder for exported PDFs
 OUTPUT_FOLDER = "output"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# ✅ Read and decode base64 JSON string from env
+# ✅ Decode base64-encoded Google service credentials
 encoded_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_B64")
 
 if not encoded_json:
-    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_B64 environment variable is missing.")
+    raise RuntimeError("❌ Missing GOOGLE_APPLICATION_CREDENTIALS_B64 environment variable")
 
 try:
-    decoded_json = base64.b64decode(encoded_json).decode("utf-8")
+    # Remove spaces/newlines if present
+    encoded_json_clean = encoded_json.strip().replace('\n', '')
+    decoded_json = base64.b64decode(encoded_json_clean).decode("utf-8")
     credentials_dict = json.loads(decoded_json)
     credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+    vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 except Exception as e:
-    raise RuntimeError(f"Failed to decode credentials: {e}")
-
-# ✅ Google Vision Client
-vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+    raise RuntimeError(f"❌ Failed to decode credentials: {e}")
 
 # ✅ OCR Endpoint
 @app.route("/api/ocr", methods=["POST"])
@@ -46,7 +45,7 @@ def ocr_pdf():
         print("[ERROR] OCR processing failed:", e)
         return jsonify({"error": "OCR processing failed"}), 500
 
-# ✅ PDF Report Class (optional if not exporting to PDF)
+# ✅ PDF Export Class (Optional)
 class PDFReport(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
@@ -64,7 +63,7 @@ class PDFReport(FPDF):
             self.cell(90, 10, key, 1)
             self.multi_cell(100, 10, value_str, 1)
 
-# ✅ PDF Export Endpoint
+# ✅ Export to PDF Endpoint
 @app.route("/api/export-pdf", methods=["POST"])
 def export_pdf():
     content = request.json
@@ -75,15 +74,15 @@ def export_pdf():
     pdf.add_page()
     pdf.add_metadata_table(content["metadata"])
 
-    path = os.path.join(OUTPUT_FOLDER, "metadata_output.pdf")
-    pdf.output(path)
-    return send_file(path, as_attachment=True)
+    pdf_path = os.path.join(OUTPUT_FOLDER, "metadata_output.pdf")
+    pdf.output(pdf_path)
+    return send_file(pdf_path, as_attachment=True)
 
-# ✅ Root Route
+# ✅ Root
 @app.route("/")
 def home():
-    return "Flask OCR backend running"
+    return "✅ Flask OCR backend running."
 
-# ✅ Start Server
+# ✅ Start App
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
