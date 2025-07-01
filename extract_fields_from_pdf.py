@@ -3,6 +3,7 @@ import io
 import re
 from PIL import Image
 from datetime import datetime
+from google.cloud import vision  # ✅ Required for `vision.Image`
 
 # ✅ OCR single page
 def ocr_page(page, vision_client):
@@ -11,8 +12,13 @@ def ocr_page(page, vision_client):
     buffer = io.BytesIO()
     img.save(buffer, format="JPEG")
     content = buffer.getvalue()
-    image = vision_client.image_annotator_pb2.Image(content=content)
+
+    image = vision.Image(content=content)  # ✅ FIXED: use vision.Image, not image_annotator_pb2
     response = vision_client.document_text_detection(image=image)
+
+    if response.error.message:
+        raise Exception(f"Vision API error: {response.error.message}")
+
     return response.full_text_annotation.text if response.full_text_annotation.text else ""
 
 # ✅ Utility functions
@@ -32,15 +38,15 @@ def find_line_containing(keywords, text):
                 return line.strip()
     return ""
 
+# ✅ PDF field extraction
 def extract_fields_from_pdf(file_storage_obj, vision_client):
     doc = fitz.open(stream=file_storage_obj.read(), filetype="pdf")
 
-    # OCR page 1, 2, 3
+    # OCR pages 1, 2, 3
     text1 = ocr_page(doc[0], vision_client) if len(doc) > 0 else ""
     text2 = ocr_page(doc[1], vision_client) if len(doc) > 1 else ""
     text3 = ocr_page(doc[2], vision_client) if len(doc) > 2 else ""
 
-    # ✅ Extract key metadata fields
     metadata = {
         "Patient Name": extract_after("Patient Name", text2) or find_line_containing(["Patient Name", "Name:"], text2),
         "Date of Birth": extract_after("Date of Birth", text2),
