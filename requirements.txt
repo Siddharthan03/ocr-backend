@@ -1,0 +1,9 @@
+flask
+flask-cors
+pytesseract            # still included in case you want to fallback or compare
+PyMuPDF
+fpdf
+pillow
+pdf2image              # for converting PDF to images (used before Google Vision)
+google-cloud-vision    # main Google OCR client
+google-cloud-storage   # if using Google Vision async batch OCR via GCS

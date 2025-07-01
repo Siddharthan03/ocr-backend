@@ -1,0 +1,131 @@
+5/8/25, 1:02 PM
+5
+UT SOUTHWESTERN MEDICAL CENTER
+Supply Orders BRACKEN, NIANEQUA CIARA (73324368) 4/24/25 Pg @n
+Orthopaedic Surgery Clinic
+1801 Inwood Rd
+Dallas, TX 75390-8882
+Phone: 214-645-3300
+Fax: 214-645-3301
+SUPPLIES ORDER
+FIN #:
+Patient Name: BRACKEN, NIANEQUA CIARA
+Address: 2101 Crouch Rd. Apt.1208
+Dallas, TX 75241
+Epic Visit #: 725368614
+MRN: 73324368 DOB: 01/26/1991
+Sex: Female Hm ph: no phone
+Wk ph: no phone
+Primary Visit Diagnosis: Closed nondisplaced fracture of first metatarsal bone
+of left foot, initial encounter [$92.315A]
+Order: DME SUPPLY OR ACCESSORY, NOS [ID:A9999 HCPCS: A9999] Order #: 633496922
+Priority: Routine Class: Normal
+Comment: dispense 1: a rebound air walker (medium) was prescribed to
+stabilize the patients ankle to allow the ankle to heal
+Associated Diagnoses
+S92.315A Closed nondisplaced fracture of first metatarsal bone of left
+foot, initial encounter
+Order Date: 05/08/2025
+Ordering User: ENRIQUEZ, ELISABETH
+Authorizing Provider:Skiles, Steven Leo [UPIN:]
+Department: ORTHOPAEDIC SURGERY
+Printed by ENRIQUEZ, ELISABETH [S226425] at 5/8/2025 1:02:43 PM
+1/1
+
+UT Southwestern
+ENCOUNTER
+Medical Center
+Patient Class: Ambulatory
+Visit Type:
+Telehealth-Established
+Clinic Name: Orthopaedic Surgery Clinic
+PATIENT
+Name: BRACKEN, NIANEQUA CIARA
+Appointment: 6/02/25 4:45 PM CDT
+MRN:
+73324368
+Guarantor: Nianequa C Bracken
+Confidential Patient:
+Study Patient:
+Address: 2101 Crouch Rd. Apt. 1208 Dallas TX 75241
+Marital Status: Single
+Provider: Michael Derond Vanpelt
+Ref Phy:
+DOB: 1/26/1991 (34 yrs)
+Sex: Female
+SSN: XXX-XX-0323
+Patient Primary
+469-364-0696
+Email: bnianequa91@gmail.com
+Prim Care Prov: Upadhyay, Vishnu M, FNP
+EMERGENCY CONTACT
+Contact Name
+Legal Guardian? Relationship to Patient
+1. Bracken, Colunda
+2. Simpson, Juanita
+PHI Designee
+Emergency Contact 1
+Home Phone
+(469)565-6328
+Work Phone
+GUARANTOR
+Guarantor:
+Address:
+NIANEQUA CIARA BRACKEN
+1238 N Masters Dr Apt 228
+DALLAS, TEXAS 75217-3736
+DOB: 1/26/1991
+Sex: Female
+Rel to Pat:
+Self
+Guar ID: 344229
+GUARANTOR EMPLOYER
+Employer: UT SOUTHWESTERN MEDICAL CENTER
+COVERAGE
+Hm Phone: 469-364-0696
+Wk Phone:
+Status
+FULL TIME
+PRIMARY INSURANCE
+Payor: BLUE CROSS BLUE SHIELD
+Plan:
+BCBS UT SELECT
+Group Number:
+071778
+Insurance Type:
+PPO
+Subscriber Name:
+BRACKEN,NIANEQUA CIARA
+Subscriber DOB:
+Subscriber ID:
+UTS0BF6JG78T
+UTS0BF6JG78T
+Self
+6/20/2022
+Insurance Addr:
+Insurance Phone:
+Insurance Auth:
+Eff To Date:
+1/26/1991
+PO Box 660044
+800-451-0287
+866-882-2034
+Member ID:
+Pat. Rel To Subscr:
+Eff From Date:
+SECONDARY INSURANCE
+Payor:
+Group Number:
+Subscriber Name:
+Subscriber ID:
+Member ID:
+Pat. Rel. To Subscr:
+Eff From Date:
+May 8, 2025
+Plan:
+Insurance Type:
+Subscriber DOB:
+Insurance Addr:
+Insurance Phone:
+Insurance Auth:
+Eff To Date:
