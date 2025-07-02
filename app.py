@@ -1,34 +1,31 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
-import os, fitz, io, json, base64, uuid, traceback
+import os, fitz, io, json, base64, uuid
 from PIL import Image
 from fpdf import FPDF
 from tempfile import NamedTemporaryFile
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as ExcelImage
-from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font
 from extract_fields_from_pdf import extract_fields_from_pdf, flatten_metadata
 from google.cloud import vision
 from google.oauth2 import service_account
 
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://ocr-frontend-opal.vercel.app"}})
 
-# Create output folders
-OUTPUT_FOLDER = "output"
 SIGNATURE_FOLDER = "signatures"
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+OUTPUT_FOLDER = "output"
 os.makedirs(SIGNATURE_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# Store all metadata
 all_metadata = []
 
-# Read and decode base64-encoded credentials
+# ✅ Load and decode credentials
 encoded_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_B64")
 if not encoded_json:
-    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_B64 env variable is missing")
+    raise ValueError("Missing GOOGLE_APPLICATION_CREDENTIALS_B64 environment variable")
 
 try:
     decoded_json = base64.b64decode(encoded_json).decode("utf-8")
@@ -36,15 +33,13 @@ try:
 except Exception as e:
     raise RuntimeError(f"Failed to decode credentials: {e}")
 
-# Initialize Google Vision client
 credentials = service_account.Credentials.from_service_account_info(credentials_dict)
 vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 
-# Signature bounding boxes
+# ✅ Signature regions
 PATIENT_RECT = fitz.Rect(0, 540, 370, 620)
 PHYSICIAN_RECT = fitz.Rect(0, 340, 370, 410)
 
-# ✅ Save cropped signature image from PDF
 def save_signature_image(pdf_bytes, rect, label):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     page = doc[0]
@@ -54,12 +49,10 @@ def save_signature_image(pdf_bytes, rect, label):
     pix.save(path)
     return path
 
-# ✅ Serve signature image
 @app.route("/signatures/<filename>")
 def serve_signature(filename):
     return send_from_directory(SIGNATURE_FOLDER, filename)
 
-# ✅ OCR + Signature Extraction
 @app.route("/api/ocr", methods=["POST"])
 def ocr_pdf():
     file = request.files.get("file")
@@ -68,7 +61,7 @@ def ocr_pdf():
 
     try:
         file_bytes = file.read()
-        extracted = extract_fields_from_pdf(io.BytesIO(file_bytes))
+        extracted = extract_fields_from_pdf(io.BytesIO(file_bytes), vision_client)
         flattened = flatten_metadata(extracted)
         flattened["File Name"] = file.filename
 
@@ -83,13 +76,10 @@ def ocr_pdf():
             "patient_signature": flattened["Patient Signature"],
             "physician_signature": flattened["Physician Signature"]
         })
-
     except Exception as e:
         print("[ERROR] OCR failed:", e)
-        traceback.print_exc()
         return jsonify({"error": "OCR processing failed"}), 500
 
-# ✅ Export to Excel with embedded images
 @app.route("/api/export-excel", methods=["POST"])
 def export_excel():
     content = request.json
@@ -110,23 +100,22 @@ def export_excel():
     for i, key in enumerate(ordered, 1):
         cell = ws.cell(row=1, column=i, value=key)
         cell.font = header_font
-        ws.column_dimensions[get_column_letter(i)].width = 30
+        ws.column_dimensions[get_column_letter(i)].width = 35
 
     for row_idx, data in enumerate(all_metadata, 2):
         row_has_image = False
-
         for col_idx, key in enumerate(ordered, 1):
             value = data.get(key, "-")
             cell_ref = f"{get_column_letter(col_idx)}{row_idx}"
 
             if key in ["Patient Signature", "Physician Signature"] and isinstance(value, str):
-                relative_path = value.replace("/signatures/", "")
-                image_path = os.path.join(SIGNATURE_FOLDER, relative_path)
+                rel_path = value.replace("/signatures/", "")
+                image_path = os.path.join(SIGNATURE_FOLDER, rel_path)
 
                 if os.path.exists(image_path):
                     try:
                         img = ExcelImage(image_path)
-                        img.width = 200
+                        img.width = 220
                         img.height = 80
                         ws.add_image(img, cell_ref)
                         row_has_image = True
@@ -145,7 +134,6 @@ def export_excel():
         tmp.seek(0)
         return send_file(tmp.name, as_attachment=True, download_name="metadata_output.xlsx")
 
-# ✅ Export to PDF
 @app.route("/api/export-pdf", methods=["POST"])
 def export_pdf():
     content = request.json
@@ -160,7 +148,6 @@ def export_pdf():
     pdf.output(path)
     return send_file(path, as_attachment=True)
 
-# ✅ PDF Report Builder
 class PDFReport(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
@@ -179,6 +166,5 @@ class PDFReport(FPDF):
                 self.cell(90, 10, key, 1)
                 self.multi_cell(100, 10, val, 1)
 
-# ✅ Start app
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
