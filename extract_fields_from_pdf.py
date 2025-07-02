@@ -6,7 +6,6 @@ from PIL import Image
 from datetime import datetime
 from google.cloud import vision
 
-
 def ocr_page(page, vision_client):
     pix = page.get_pixmap(dpi=300)
     img = Image.open(io.BytesIO(pix.tobytes("png")))
@@ -15,16 +14,13 @@ def ocr_page(page, vision_client):
     response = vision_client.document_text_detection(image=vision.Image(content=buffer.getvalue()))
     return response.full_text_annotation.text if response.text_annotations else ""
 
-
 def extract_patient_address(text):
     match = re.search(r"Address[:\s]*([\w\s.,#-]+\d{5}(?:-\d{4})?)", text, re.IGNORECASE)
     return match.group(1).strip().replace("\n", " ") if match else "-"
 
-
 def extract_patient_name_from_page2(text2):
     match = re.search(r"Patient Name[:\s]*([A-Za-z ,.'-]+)", text2, re.IGNORECASE)
     return match.group(1).strip() if match else "-"
-
 
 def extract_physician_from_signature_area(text1, fallback_name=None):
     lines = text1.splitlines()
@@ -47,7 +43,6 @@ def extract_physician_from_signature_area(text1, fallback_name=None):
         return candidates[0]
     return "-"
 
-
 def extract_handwritten_delivery_date(text):
     lines = text.splitlines()
     for i, line in enumerate(lines):
@@ -63,11 +58,9 @@ def extract_handwritten_delivery_date(text):
                     return f"{mm}/{dd}/{yyyy}"
     return "-"
 
-
 def extract_hcpcs_from_page2(text2):
     match = re.search(r"HCPCS[:\s]*([A-Z][0-9]{4})", text2, re.IGNORECASE)
     return match.group(1).strip() if match else "-"
-
 
 def extract_coverage_details(text3):
     data = {
@@ -81,13 +74,9 @@ def extract_coverage_details(text3):
     lines = [line.strip() for line in text3.splitlines() if line.strip()]
     n = len(lines)
 
-    def is_valid(val):
-        return val and val.lower() not in ["-", ":", "n/a", "na", "number", "name", "encounter", "dob"]
-
     for i, line in enumerate(lines):
         lwr = line.lower()
 
-        # Group Number
         if "group" in lwr and data["Group Number"] == "-":
             val = re.sub(r"(?i)group(?: number| no)?[:\s#]*", "", line).strip()
             if re.fullmatch(r"\d{4,}", val):
@@ -95,7 +84,6 @@ def extract_coverage_details(text3):
             elif i + 1 < n and re.fullmatch(r"\d{4,}", lines[i + 1].strip()):
                 data["Group Number"] = lines[i + 1].strip()
 
-        # Subscriber ID (Member ID pattern)
         if data["Subscriber ID"] == "-":
             match = re.search(r"\b[A-Z0-9]{8,15}\b", line)
             if match:
@@ -103,13 +91,11 @@ def extract_coverage_details(text3):
                 if candidate.isupper() and any(char.isdigit() for char in candidate):
                     data["Subscriber ID"] = candidate
 
-        # Insurance Auth
         if "insurance auth" in lwr and data["Insurance Authorization Number"] == "-":
             match = re.search(r"\d{3}-\d{3}-\d{4}", line)
             if match:
                 data["Insurance Authorization Number"] = match.group(0)
 
-        # Insurance Phone
         if data["Insurance Phone"] == "-":
             match = re.search(r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", line)
             if match:
@@ -117,7 +103,6 @@ def extract_coverage_details(text3):
                 if phone.startswith(("800", "888", "877", "866", "855")) or "insurance phone" in lwr:
                     data["Insurance Phone"] = phone
 
-    # Fallbacks
     if data["Insurance Phone"] == "-" and "800-451-0287" in text3:
         data["Insurance Phone"] = "800-451-0287"
     if data["Insurance Authorization Number"] == "-" and "866-882-2034" in text3:
@@ -129,7 +114,6 @@ def extract_coverage_details(text3):
                 break
 
     return data
-
 
 def extract_structured_data_from_text(text1, text2, text3):
     lines = (text1 + "\n" + text2 + "\n" + text3).splitlines()
@@ -214,13 +198,11 @@ def extract_structured_data_from_text(text1, text2, text3):
         "Insurance Phone": coverage["Insurance Phone"]
     }
 
-
 def flatten_metadata(data):
     return {k: v for k, v in data.items()}
 
-
-def extract_fields_from_pdf(file_storage_obj):
-    vision_client = vision.ImageAnnotatorClient()
+# ✅ Accept vision_client as a parameter
+def extract_fields_from_pdf(file_storage_obj, vision_client):
     doc = fitz.open(stream=file_storage_obj.read(), filetype="pdf")
     text1 = ocr_page(doc[0], vision_client) if len(doc) > 0 else ""
     text2 = ocr_page(doc[1], vision_client) if len(doc) > 1 else ""
