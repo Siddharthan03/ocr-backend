@@ -1,8 +1,13 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
-import os, fitz, io, json, base64
+import os, fitz, io, json, base64, uuid, traceback
 from PIL import Image
 from fpdf import FPDF
+from tempfile import NamedTemporaryFile
+from openpyxl import Workbook
+from openpyxl.drawing.image import Image as ExcelImage
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
 from extract_fields_from_pdf import extract_fields_from_pdf, flatten_metadata
 from google.cloud import vision
 from google.oauth2 import service_account
@@ -11,9 +16,14 @@ from google.oauth2 import service_account
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://ocr-frontend-opal.vercel.app"}})
 
-# Output folder for PDF export
+# Create output folders
 OUTPUT_FOLDER = "output"
+SIGNATURE_FOLDER = "signatures"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+os.makedirs(SIGNATURE_FOLDER, exist_ok=True)
+
+# Store all metadata
+all_metadata = []
 
 # Read and decode base64-encoded credentials
 encoded_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_B64")
@@ -30,7 +40,7 @@ except Exception as e:
 credentials = service_account.Credentials.from_service_account_info(credentials_dict)
 vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 
-# OCR endpoint
+# Signature bounding boxes
 PATIENT_RECT = fitz.Rect(0, 540, 370, 620)
 PHYSICIAN_RECT = fitz.Rect(0, 340, 370, 410)
 
@@ -73,14 +83,15 @@ def ocr_pdf():
             "patient_signature": flattened["Patient Signature"],
             "physician_signature": flattened["Physician Signature"]
         })
+
     except Exception as e:
         print("[ERROR] OCR failed:", e)
+        traceback.print_exc()
         return jsonify({"error": "OCR processing failed"}), 500
 
 # ✅ Export to Excel with embedded images
 @app.route("/api/export-excel", methods=["POST"])
 def export_excel():
-    global all_metadata
     content = request.json
     if content and "metadata" in content:
         all_metadata.append(content["metadata"])
@@ -99,7 +110,7 @@ def export_excel():
     for i, key in enumerate(ordered, 1):
         cell = ws.cell(row=1, column=i, value=key)
         cell.font = header_font
-        ws.column_dimensions[get_column_letter(i)].width = 30  # wider columns
+        ws.column_dimensions[get_column_letter(i)].width = 30
 
     for row_idx, data in enumerate(all_metadata, 2):
         row_has_image = False
@@ -127,14 +138,14 @@ def export_excel():
                 ws[cell_ref] = value
 
         if row_has_image:
-            ws.row_dimensions[row_idx].height = 90  # taller row for images
+            ws.row_dimensions[row_idx].height = 90
 
     with NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         wb.save(tmp.name)
         tmp.seek(0)
         return send_file(tmp.name, as_attachment=True, download_name="metadata_output.xlsx")
 
-# ✅ PDF Export Endpoint (unchanged)
+# ✅ Export to PDF
 @app.route("/api/export-pdf", methods=["POST"])
 def export_pdf():
     content = request.json
@@ -149,6 +160,7 @@ def export_pdf():
     pdf.output(path)
     return send_file(path, as_attachment=True)
 
+# ✅ PDF Report Builder
 class PDFReport(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
@@ -167,5 +179,6 @@ class PDFReport(FPDF):
                 self.cell(90, 10, key, 1)
                 self.multi_cell(100, 10, val, 1)
 
+# ✅ Start app
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
