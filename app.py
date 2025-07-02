@@ -168,4 +168,4 @@ class PDFReport(FPDF):
                 self.multi_cell(100, 10, val, 1)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8000)
