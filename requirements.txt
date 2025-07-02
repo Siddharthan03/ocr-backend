@@ -1,6 +1,7 @@
 flask
 flask-cors
 pytesseract            # still included in case you want to fallback or compare
+openpyxl
 PyMuPDF
 fpdf
 pillow
