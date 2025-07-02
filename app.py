@@ -9,7 +9,7 @@ from google.oauth2 import service_account
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "https://ocr-frontend-opal.vercel.app"}})
 
 # Output folder for PDF export
 OUTPUT_FOLDER = "output"
