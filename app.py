@@ -53,7 +53,7 @@ def save_signature_image(pdf_bytes, rect, label):
 def serve_signature(filename):
     return send_from_directory(SIGNATURE_FOLDER, filename)
 
-@app.route("/", methods=["POST"])
+@app.route("/", methods=["GET"])
 def ocr_pdf():
     file = request.files.get("file")
     if not file or not file.filename.lower().endswith(".pdf"):
