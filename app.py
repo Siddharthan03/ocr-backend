@@ -54,6 +54,11 @@ def serve_signature(filename):
     return send_from_directory(SIGNATURE_FOLDER, filename)
 
 @app.route("/", methods=["GET"])
+def index():
+    return "✅ OCR Backend is running!"
+
+
+@app.route("/api/ocr", methods=["POST"])
 def ocr_pdf():
     file = request.files.get("file")
     if not file or not file.filename.lower().endswith(".pdf"):
